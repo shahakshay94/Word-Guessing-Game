@@ -1,8 +1,10 @@
 class Game:
-    def __init__(self, actual_word, bad_guesses=0, status=False, missed_letters=0, score=0, player_word=""):
+    def __init__(self, actual_word, bad_guesses=0, status=False, missed_letters=0, letters_tried=0, score=0,
+                 player_word=""):
         """
         Creates an object for each game played by the user.
         Just like constructor.
+        :param letters_tried: number of times any letter were entered
         :param score: number; Score for that game
         :param player_word: string ; At the time of quitting/tell/guess the player word
         :param actual_word: string ; word which player needs to guess
@@ -16,6 +18,7 @@ class Game:
         self.missed_letters = missed_letters
         self.score = score
         self.player_word = player_word
+        self.letters_tried = letters_tried
 
 
 letter_frequencies = dict({
@@ -46,4 +49,3 @@ letter_frequencies = dict({
     'y': 1.97,
     'z': 0.07
 })
-

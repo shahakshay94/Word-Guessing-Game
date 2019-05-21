@@ -26,10 +26,14 @@ def update_screen_output(letter, word, output):
     :param output: string : current output string which is displayed to the user
     :return: output string with letter filled in it's respective position in the word
     """
+    found_letter = 0
     for i in range(0, len(word)):
         if letter == word[i]:
+            found_letter += 1
             output = output[:i] + letter + output[i + 1:]
-
+    print(f'************************************')
+    print(f' You found {found_letter} letter(s)')
+    print(f'************************************')
     return output
 
 
@@ -60,16 +64,16 @@ def display_score(games):
         final_score += game.score
         print(f'{str(index + 1).ljust(20)}{str(game.actual_word).ljust(20)}'
               f'{str(status_string).ljust(20)}{str(game.bad_guesses).ljust(20)}'
-              f'{str(game.missed_letters).ljust(20)}{str(game.score).ljust(20)}')
-    print(f'Final Score : {final_score}')
+              f'{str(game.missed_letters).ljust(20)}{str(round(game.score, 2)).ljust(20)}')
+    print(f'Final Score : {final_score:.2f}')
     pass
 
 
 def get_blank_spaces(player_word):
     """
-
-    :param player_word:
-    :return:
+    Get the index of the blank spaces at a particular time
+    :param player_word: the current state of the output screen word which player has guessed already
+    :return: the list of index position where - is found
     """
     blanks_index = []
     for i in range(len(player_word)):
@@ -80,19 +84,21 @@ def get_blank_spaces(player_word):
 
 def get_frequency_for_character(alphabet):
     """
-
-    :param alphabet:
-    :return:
+    This function maps the frequency of the alphabet from the game.py file
+    characters range from lowercase a to lowercase z
+    :param alphabet: character for which the frequency is wanted
+    :return: number
     """
     return letter_frequencies.get(alphabet, None)
 
 
 def get_total_frequency_for_blank(actual_word, blank_spaces):
     """
-
+    Counts the total frequency of the letter which was at the blank space by
+    mapping the respective frequency together and summing it up
     :param actual_word:
     :param blank_spaces:
-    :return:
+    :return: total frequency
     """
     total = 0
     for space in blank_spaces:
@@ -105,7 +111,7 @@ def get_total_frequency_for_blank(actual_word, blank_spaces):
 
 def get_maximum_score_for_word(actual_word):
     """
-
+    Calculates the maximum score for the current guessed word
     :param actual_word:
     :return:
     """
@@ -124,15 +130,12 @@ def calculate_score(games):
     for (index, game) in enumerate(games):
         blank_spaces = get_blank_spaces(game.player_word)
         total_frequency_count = get_total_frequency_for_blank(game.actual_word, blank_spaces)
-        if game.status and game.bad_guesses == 0 and game.missed_letters == 0:
-            game.score = get_maximum_score_for_word(game.actual_word)
-        if game.status and game.bad_guesses > 0 and game.missed_letters > 0:
-            game.score = total_frequency_count - total_frequency_count * 0.10
-            game.score = game.score - game.score / game.missed_letters
-        if game.status and game.missed_letters > 0 and game.bad_guesses == 0:
-            game.score = get_maximum_score_for_word(game.actual_word) / game.missed_letters
-        if game.status and game.bad_guesses > 0 and game.missed_letters == 0:
-            game.score = total_frequency_count - total_frequency_count * 0.10
+        if game.status:
+            game.score = total_frequency_count / game.letters_tried if game.letters_tried > 0 else total_frequency_count
+            if game.bad_guesses > 0:
+                for i in range(game.bad_guesses):
+                    game.score -= game.score * 0.10
+
         if not game.status:
             game.score = 0 - total_frequency_count
     pass
@@ -156,18 +159,22 @@ def start_game():
     playing = True
     screen_output = "-" * len(guess_word)
     new_game.player_word = screen_output
-    print(f'** The great guessing game ---->** {guess_word} **<---- This is word you are trying to guess')
+    print(f'*****************************')
+    print(f'** The great guessing game **')
+    print(f'*****************************')
     while playing:
         print(f'Current guess {screen_output}')
         option = input('g = guess, t = tell, l = letter, q = quit\n')
         if option.lower() == 'g':
             whole_word_guess = input('Enter the whole word!\n').lower()
             if whole_word_guess == guess_word:
-                print(r'Congratulations ! You guess the word')
+                print(f'Congratulations ! You guess the word')
                 new_game.status = True
                 new_game.player_word = screen_output
                 guess_word = get_random_word(file_name)
-                print(f'** The great guessing game ---->** {guess_word} **<---- This is word you are trying to guess')
+                print(f'*****************************')
+                print(f'** The great guessing game **')
+                print(f'*****************************')
                 new_game = Game(guess_word)
                 games.append(new_game)
                 screen_output = "-" * len(guess_word)
@@ -175,26 +182,35 @@ def start_game():
                 print(r'OOPS ! You guessed it wrong. Please try again.')
                 new_game.bad_guesses = new_game.bad_guesses + 1
         elif option.lower() == 't':
-            print(f'The word was {guess_word}')
+
+            print(f'*****************************')
+            print(f'The word was {guess_word} ')
+            print(f'*****************************')
+
             print(f'Let\'s see if you can guess the next one.')
             guess_word = get_random_word(file_name)
-            print(f'** The great guessing game ---->** {guess_word} **<---- This is word you are trying to guess')
+            print(f'*****************************')
+            print(f'** The great guessing game **')
+            print(f'*****************************')
             new_game.player_word = screen_output
             new_game = Game(guess_word)
             games.append(new_game)
             screen_output = "-" * len(guess_word)
         elif option.lower() == 'l':
             input_letter = input('Enter the letter:\n')[0].lower()
+            new_game.letters_tried += 1
             if check_guess_if_letter_enter(input_letter, guess_word):
                 screen_output = update_screen_output(input_letter, guess_word, screen_output)
                 new_game.player_word = screen_output
             else:
                 new_game.missed_letters = new_game.missed_letters + 1
             if "-" not in screen_output:
-                print('Congratulations ! you guess the word\n')
+                print('Congratulations! You guess the word\n')
                 new_game.status = True
                 guess_word = get_random_word(file_name)
-                print(f'** The great guessing game ---->** {guess_word} **<---- This is word you are trying to guess')
+                print(f'*****************************')
+                print(f'** The great guessing game **')
+                print(f'*****************************')
                 new_game = Game(guess_word)
                 games.append(new_game)
                 screen_output = "-" * len(guess_word)
@@ -208,6 +224,7 @@ def start_game():
     pass
 
 
-start_game()
-# for line in open('four_letters.txt'):
-#     print(line, end='')
+try:
+    start_game()
+except KeyboardInterrupt:
+    print(f'You have stopped the program !')
