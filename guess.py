@@ -45,6 +45,7 @@ def display_score(games):
     missed_string = "Missed Letters"
     score_string = "Score"
     hyphens_string = "---------"
+    final_score = 0
 
     print(f'{game_string.ljust(20)}{word_string.ljust(20)}'
           f'{status_string.ljust(20)}{bad_string.ljust(20)}'
@@ -55,12 +56,21 @@ def display_score(games):
           f'{hyphens_string.ljust(20)}{hyphens_string.ljust(20)}')
 
     for (index, game) in enumerate(games):
+        status_string = "Success" if game.status else "Gave up"
+        final_score += game.score
         print(f'{str(index + 1).ljust(20)}{str(game.actual_word).ljust(20)}'
-              f'{str(game.status).ljust(20)}{str(game.bad_guesses).ljust(20)}'
+              f'{str(status_string).ljust(20)}{str(game.bad_guesses).ljust(20)}'
               f'{str(game.missed_letters).ljust(20)}{str(game.score).ljust(20)}')
+    print(f'Final Score : {final_score}')
+    pass
 
 
 def get_blank_spaces(player_word):
+    """
+
+    :param player_word:
+    :return:
+    """
     blanks_index = []
     for i in range(len(player_word)):
         if player_word[i] == "-":
@@ -69,17 +79,39 @@ def get_blank_spaces(player_word):
 
 
 def get_frequency_for_character(alphabet):
+    """
+
+    :param alphabet:
+    :return:
+    """
     return letter_frequencies.get(alphabet, None)
 
 
 def get_total_frequency_for_blank(actual_word, blank_spaces):
+    """
+
+    :param actual_word:
+    :param blank_spaces:
+    :return:
+    """
     total = 0
     for space in blank_spaces:
         try:
             total += get_frequency_for_character(actual_word[space])
         except:
             print(f'No frequency associated with letter {actual_word[space]}')
-            sys.exit(1)
+    return total
+
+
+def get_maximum_score_for_word(actual_word):
+    """
+
+    :param actual_word:
+    :return:
+    """
+    total = 0
+    for i in range(len(actual_word)):
+        total += get_frequency_for_character(actual_word[i])
     return total
 
 
@@ -92,8 +124,17 @@ def calculate_score(games):
     for (index, game) in enumerate(games):
         blank_spaces = get_blank_spaces(game.player_word)
         total_frequency_count = get_total_frequency_for_blank(game.actual_word, blank_spaces)
-        game.score = total_frequency_count
-        # print(total_frequency_count)
+        if game.status and game.bad_guesses == 0 and game.missed_letters == 0:
+            game.score = get_maximum_score_for_word(game.actual_word)
+        if game.status and game.bad_guesses > 0 and game.missed_letters > 0:
+            game.score = total_frequency_count - total_frequency_count * 0.10
+            game.score = game.score - game.score / game.missed_letters
+        if game.status and game.missed_letters > 0 and game.bad_guesses == 0:
+            game.score = get_maximum_score_for_word(game.actual_word) / game.missed_letters
+        if game.status and game.bad_guesses > 0 and game.missed_letters == 0:
+            game.score = total_frequency_count - total_frequency_count * 0.10
+        if not game.status:
+            game.score = 0 - total_frequency_count
     pass
 
 
@@ -115,7 +156,7 @@ def start_game():
     playing = True
     screen_output = "-" * len(guess_word)
     new_game.player_word = screen_output
-    print(f'** The great guessing game ---->** {guess_word}')
+    print(f'** The great guessing game ---->** {guess_word} **<---- This is word you are trying to guess')
     while playing:
         print(f'Current guess {screen_output}')
         option = input('g = guess, t = tell, l = letter, q = quit\n')
@@ -126,7 +167,7 @@ def start_game():
                 new_game.status = True
                 new_game.player_word = screen_output
                 guess_word = get_random_word(file_name)
-                print(f'** The great guessing game ---->** {guess_word}')
+                print(f'** The great guessing game ---->** {guess_word} **<---- This is word you are trying to guess')
                 new_game = Game(guess_word)
                 games.append(new_game)
                 screen_output = "-" * len(guess_word)
@@ -137,7 +178,7 @@ def start_game():
             print(f'The word was {guess_word}')
             print(f'Let\'s see if you can guess the next one.')
             guess_word = get_random_word(file_name)
-            print(f'** The great guessing game ---->** {guess_word}')
+            print(f'** The great guessing game ---->** {guess_word} **<---- This is word you are trying to guess')
             new_game.player_word = screen_output
             new_game = Game(guess_word)
             games.append(new_game)
@@ -153,16 +194,18 @@ def start_game():
                 print('Congratulations ! you guess the word\n')
                 new_game.status = True
                 guess_word = get_random_word(file_name)
-                print(f'** The great guessing game ---->** {guess_word}')
+                print(f'** The great guessing game ---->** {guess_word} **<---- This is word you are trying to guess')
                 new_game = Game(guess_word)
                 games.append(new_game)
                 screen_output = "-" * len(guess_word)
         elif option.lower() == 'q':
             playing = False
+            games.pop()
             calculate_score(games)
             display_score(games)
         else:
             print('Wrong option selected ! Please try again\n')
+    pass
 
 
 start_game()
