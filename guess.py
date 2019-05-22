@@ -137,7 +137,8 @@ def calculate_score(games):
                     game.score -= game.score * 0.10
 
         if not game.status:
-            game.score = 0 - total_frequency_count
+            game.score = (0 - total_frequency_count) / game.missed_letters if game.missed_letters > 0 else (
+                        0 - total_frequency_count)
     pass
 
 
